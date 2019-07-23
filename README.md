@@ -8,7 +8,7 @@ This [Open Ephys](https://open-ephys.atlassian.net/wiki/spaces/OEW/pages/491527/
 
 This plugin can be built outside of the main GUI file tree using CMake. In order to do so, it must be in a sibling directory to plugin-GUI\* and the main GUI must have already been compiled.
 
-If you are already using CMake to build the *main GUI* (in development as of writing), you should switch to the `cmake-gui` branch to get the compatible plugin CMake build file.
+You should use this branch if you are already using CMake to build the *main GUI* (in development as of writing). Otherwise, use the `master` branch.
 
 See `MeanSpikeRate/CMAKE_README.txt` and/or the wiki page [here](https://open-ephys.atlassian.net/wiki/spaces/OEW/pages/1259110401/Plugin+CMake+Builds) for build instructions.
 
