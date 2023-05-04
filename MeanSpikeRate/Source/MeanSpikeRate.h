@@ -34,11 +34,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * @see GenericProcessor
  */
 
-// parameter indices
-enum Param
-{
-    OUTPUT_CHAN,
-    TIME_CONST
+class MeanSpikeRateSettings {
+public:
+    float timeConstMs;
+    int outputChan;
 };
 
 class MeanSpikeRate : public GenericProcessor
@@ -53,30 +52,29 @@ public:
     AudioProcessorEditor* createEditor() override;
 
     void process(AudioSampleBuffer& continuousBuffer) override;
-    void handleSpike(const SpikeChannel* spikeInfo, const MidiMessage& event, int samplePosition = 0) override;
+    void handleSpike(SpikePtr spike) override;
 
-    void setParameter(int parameterIndex, float newValue) override;
+    void parameterValueChanged(Parameter* param) override;
 
-    // save and load spike channel selection state
-    void saveCustomChannelParametersToXml(XmlElement* channelElement, int channelNumber, InfoObjectCommon::InfoObjectType channelType) override;
-    void loadCustomParametersFromXml() override;
-    void loadCustomChannelParametersFromXml(XmlElement* channelElement, InfoObjectCommon::InfoObjectType channelType);
+    // Stores/loads spike channel selection state. Output channel and time constant are handled automatically
+    void loadCustomParametersFromXml(XmlElement* parentElement) override;
+    void saveCustomParametersToXml(XmlElement* parentElement) override;
 
 private:
     // functions
     int getNumActiveElectrodes();
-    bool channelIsActive(const SpikeChannel* info, const MidiMessage& event);
-
-    // parameters
-    int outputChan;
-    double timeConstMs;
+    void updateSettings() override;;
 
     // internals
+    StreamSettings<MeanSpikeRateSettings> settings;
     int currSample;          // per-buffer - allows processing samples while handling events
     double spikeAmp;         // updated once per buffer
     double decayPerSample;   // updated once per buffer
     float currMean;
     float* wpBuffer;
+
+    const String OUTPUT_TOOLTIP = "Continuous channel to overwrite with the spike rate (meaned over time and selected electrodes)";
+    const String TIME_CONST_TOOLTIP = "Time for the influence of a single spike to decay to 36.8% (1/e) of its initial value (larger = smoother, smaller = faster reaction to changes)";
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MeanSpikeRate);
 };

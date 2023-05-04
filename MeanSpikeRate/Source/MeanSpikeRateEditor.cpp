@@ -26,12 +26,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cfloat> // FLT_MAX
 
 MeanSpikeRateEditor::MeanSpikeRateEditor(MeanSpikeRate* parentNode)
-    : GenericEditor(parentNode, false)
+    : GenericEditor(parentNode)
 {
     desiredWidth = WIDTH;
     const int HEADER_HEIGHT = 22;
 
-    auto processor = static_cast<MeanSpikeRate*>(getProcessor());
+    auto processor = static_cast<MeanSpikeRate*>(getProcessor()); 
 
     // spike channels
     spikeChannelViewport = new Viewport();
@@ -48,44 +48,8 @@ MeanSpikeRateEditor::MeanSpikeRateEditor(MeanSpikeRate* parentNode)
     int yPos = HEADER_HEIGHT + BUTTON_VIEWPORT_HEIGHT + 5;
     const int TEXT_HEIGHT = 20;
 
-    outputLabel = new Label("outputL", "Output:");
-    outputLabel->setBounds(xPos, yPos + 1, 70, TEXT_HEIGHT);
-    outputLabel->setFont(Font("Small Text", 12, Font::plain));
-    outputLabel->setColour(Label::textColourId, Colours::darkgrey);
-    outputLabel->setTooltip(OUTPUT_TOOLTIP);
-    addAndMakeVisible(outputLabel);
-
-    outputBox = new ComboBox("outputB");
-    outputBox->setBounds(xPos + 75, yPos, 50, TEXT_HEIGHT);
-    outputBox->setTooltip(OUTPUT_TOOLTIP);
-    outputBox->addListener(this);
-    addAndMakeVisible(outputBox);
-
-    yPos += TEXT_HEIGHT + 5;
-
-    timeConstLabel = new Label("timeConstL", "Time const:");
-    timeConstLabel->setBounds(xPos, yPos + 1, 80, TEXT_HEIGHT);
-    timeConstLabel->setFont(Font("Small Text", 12, Font::plain));
-    timeConstLabel->setColour(Label::textColourId, Colours::darkgrey);
-    timeConstLabel->setTooltip(TIME_CONST_TOOLTIP);
-    addAndMakeVisible(timeConstLabel);
-
-    timeConstEditable = new Label("timeConstE");
-    timeConstEditable->setEditable(true);
-    timeConstEditable->setBounds(xPos += 80, yPos, 45, TEXT_HEIGHT);
-    timeConstEditable->setText(String(processor->timeConstMs), dontSendNotification);
-    timeConstEditable->setColour(Label::backgroundColourId, Colours::grey);
-    timeConstEditable->setColour(Label::textColourId, Colours::white);
-    timeConstEditable->setTooltip(TIME_CONST_TOOLTIP);
-    timeConstEditable->addListener(this);
-    addAndMakeVisible(timeConstEditable);
-
-    timeConstUnit = new Label("timeConstU", "ms");
-    timeConstUnit->setBounds(xPos + 45, yPos + 1, 25, TEXT_HEIGHT);
-    timeConstUnit->setFont(Font("Small Text", 12, Font::plain));
-    timeConstUnit->setColour(Label::textColourId, Colours::darkgrey);
-    timeConstUnit->setTooltip(TIME_CONST_TOOLTIP);
-    addAndMakeVisible(timeConstUnit);
+    addSelectedChannelsParameterEditor("Output", 10, yPos + TEXT_HEIGHT);
+    addTextBoxParameterEditor("Time_Const", 100, yPos);
 }
 
 MeanSpikeRateEditor::~MeanSpikeRateEditor() {}
@@ -94,30 +58,8 @@ void MeanSpikeRateEditor::updateSettings()
 {
     MeanSpikeRate* processor = static_cast<MeanSpikeRate*>(getProcessor());
 
-    // update output channel options
-    int oldNumChans = outputBox->getNumItems();
-    int newNumChans = processor->getNumInputs();
-
-    if (newNumChans != oldNumChans)
-    {
-        outputBox->clear(dontSendNotification);
-        for (int i = 0; i < newNumChans; ++i)
-        {
-            outputBox->addItem(String(i + 1), i + 1);
-        }
-
-        if (newNumChans > processor->outputChan)
-        {
-            outputBox->setSelectedId(processor->outputChan + 1, dontSendNotification);
-        }
-        else if (newNumChans > 0)
-        {
-            outputBox->setSelectedId(1, sendNotificationAsync);
-        }
-    }
-
     // update electrode buttons
-    auto& spikeChannelArray = processor->spikeChannelArray;
+    auto& spikeChannelArray = processor->spikeChannels;
 
     // make spikeChannelButtons array match the spikeChannelArray
     int numSpikeChans = spikeChannelArray.size();
@@ -181,28 +123,6 @@ int MeanSpikeRateEditor::getNumActiveElectrodes()
     return numActive;
 }
 
-void MeanSpikeRateEditor::comboBoxChanged(ComboBox* comboBoxThatHasChanged)
-{
-    auto processor = static_cast<MeanSpikeRate*>(getProcessor());
-    processor->setParameter(OUTPUT_CHAN, comboBoxThatHasChanged->getSelectedId() - 1);
-}
-
-void MeanSpikeRateEditor::labelTextChanged(Label* labelThatHasChanged)
-{
-    if (labelThatHasChanged == timeConstEditable)
-    {
-        auto processor = static_cast<MeanSpikeRate*>(getProcessor());
-
-        float newVal;
-        bool success = updateFloatLabel(labelThatHasChanged, 0.01F, FLT_MAX, static_cast<float>(processor->timeConstMs), &newVal);
-
-        if (success)
-        {
-            processor->setParameter(TIME_CONST, newVal);
-        }
-    }
-}
-
 bool MeanSpikeRateEditor::getSpikeChannelEnabled(int index)
 {
     if (index < 0 || index >= spikeChannelButtons.size())
@@ -221,29 +141,6 @@ void MeanSpikeRateEditor::setSpikeChannelEnabled(int index, bool enabled)
         return;
     }
     spikeChannelButtons[index]->setToggleState(enabled, sendNotificationSync);
-}
-
-void MeanSpikeRateEditor::saveCustomParameters(XmlElement* xml)
-{
-    xml->setAttribute("Type", "MeanSpikeRateEditor");
-
-    XmlElement* paramValues = xml->createNewChildElement("VALUES");
-    paramValues->setAttribute("outputChan", outputBox.get() ? outputBox->getSelectedId() - 1 : -1);
-    paramValues->setAttribute("timeConstMs", timeConstEditable.get() ? timeConstEditable->getText() : "1000");
-}
-
-void MeanSpikeRateEditor::loadCustomParameters(XmlElement* xml)
-{
-    forEachXmlChildElementWithTagName(*xml, xmlNode, "VALUES")
-    {
-        int newOutputChan = xmlNode->getIntAttribute("outputChan", -1);
-        if (newOutputChan >= 0 && newOutputChan < outputBox->getNumItems())
-        {
-            outputBox->setSelectedId(newOutputChan + 1, sendNotificationSync);
-        }
-
-        timeConstEditable->setText(xmlNode->getStringAttribute("timeConstMs", timeConstEditable->getText()), sendNotificationSync);
-    }
 }
 
 /* -------- private ----------- */
@@ -273,7 +170,7 @@ ElectrodeButton* MeanSpikeRateEditor::makeNewChannelButton(SpikeChannel* chan)
         break;
     }
 
-    button->setButtonText(prefix + String(chan->getSourceTypeIndex()));
+    button->setButtonText(prefix + String(chan->getLocalIndex()));
     button->setTooltip(chan->getName());
 
     return button;
@@ -296,25 +193,4 @@ void MeanSpikeRateEditor::layoutChannelButtons()
 
         spikeChannelCanvas->addAndMakeVisible(button);
     }    
-}
-
-bool MeanSpikeRateEditor::updateFloatLabel(Label* label, float min, float max,
-    float defaultValue, float* out)
-{
-    const String& in = label->getText();
-    float parsedFloat;
-    try
-    {
-        parsedFloat = std::stof(in.toRawUTF8());
-    }
-    catch (const std::logic_error&)
-    {
-        label->setText(String(defaultValue), dontSendNotification);
-        return false;
-    }
-
-    *out = jmax(min, jmin(max, parsedFloat));
-
-    label->setText(String(*out), dontSendNotification);
-    return true;
 }

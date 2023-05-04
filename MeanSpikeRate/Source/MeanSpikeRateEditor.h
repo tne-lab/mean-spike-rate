@@ -29,8 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class MeanSpikeRateEditor 
     : public GenericEditor
-    , public ComboBoxListener
-    , public LabelListener
 {
 public:
     MeanSpikeRateEditor(MeanSpikeRate* parentNode);
@@ -40,45 +38,21 @@ public:
 
     int getNumActiveElectrodes();
 
-    // implements ComboBox::Listener
-    void comboBoxChanged(ComboBox* comboBoxThatHasChanged) override;
-
-    // implements Label::Listener
-    void labelTextChanged(Label* labelThatHasChanged) override;
-
     bool getSpikeChannelEnabled(int index);
     void setSpikeChannelEnabled(int index, bool enabled);
-
-    void saveCustomParameters(XmlElement* xml) override;
-    void loadCustomParameters(XmlElement* xml) override;
 
 private:
     // functions
     ElectrodeButton* makeNewChannelButton(SpikeChannel* chan);
     void layoutChannelButtons();
 
-    /*
-     * Ouputs whether the label contained a valid input; if so, it is stored in *out
-     * and the label is updated with the parsed input. Otherwise, the label is reset
-     * to defaultValue.
-     */
-    static bool updateFloatLabel(Label* label, float min, float max,
-        float defaultValue, float* out);
-
     // UI elements
     ScopedPointer<Viewport> spikeChannelViewport;
     ScopedPointer<Component> spikeChannelCanvas;
     OwnedArray<ElectrodeButton> spikeChannelButtons;
 
-    ScopedPointer<Label> outputLabel;
-    ScopedPointer<ComboBox> outputBox;
-
-    ScopedPointer<Label> timeConstLabel;
-    ScopedPointer<Label> timeConstEditable;
-    ScopedPointer<Label> timeConstUnit;
-
     // constants
-    static const int WIDTH = 170;
+    static const int WIDTH = 200;
     static const int CONTENT_WIDTH = WIDTH - 7;
     static const int BUTTON_WIDTH = 35;
     static const int BUTTON_HEIGHT = 15;
